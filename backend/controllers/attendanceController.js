@@ -361,3 +361,89 @@ exports.getAttendanceSummary = async (req, res) => {
     });
   }
 };
+
+// @desc    Monthly attendance report for a single user
+// @route   GET /api/attendance/report?user=<id>&month=YYYY-MM
+// @access  Private (Admin, Manager)
+exports.getMonthlyReport = async (req, res) => {
+  try {
+    const { user, month } = req.query;
+
+    if (!user || !month) {
+      return res.status(400).json({
+        success: false,
+        message: 'user and month (YYYY-MM) are required',
+      });
+    }
+
+    const [year, mon] = month.split('-').map(Number);
+    if (!year || !mon || mon < 1 || mon > 12) {
+      return res.status(400).json({
+        success: false,
+        message: 'month must be in YYYY-MM format',
+      });
+    }
+
+    // First day of the month to first day of the next month (exclusive)
+    const start = new Date(year, mon - 1, 1);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(year, mon, 1);
+    end.setHours(0, 0, 0, 0);
+
+    const records = await Attendance.find({
+      user,
+      date: { $gte: start, $lt: end },
+    })
+      .populate('user', 'firstName lastName email employeeId')
+      .sort({ date: 1 });
+
+    const count = (status) => records.filter((r) => r.status === status).length;
+    const present = count('present');
+    const late = count('late');
+    const halfDay = count('half-day');
+    const totalWorkHours = Math.round(
+      records.reduce((sum, r) => sum + (r.workHours || 0), 0) * 100
+    ) / 100;
+
+    // Present + late + half-day count as "attended" days
+    const attendedDays = present + late + halfDay;
+    const daysRecorded = records.length;
+
+    const summary = {
+      month,
+      employee: records[0]?.user || null,
+      present,
+      absent: count('absent'),
+      late,
+      halfDay,
+      onLeave: count('on-leave'),
+      holiday: count('holiday'),
+      daysRecorded,
+      totalWorkHours,
+      // % of recorded days actually attended (avoids dividing by an unknown
+      // number of company working days)
+      attendancePercentage:
+        daysRecorded > 0 ? Math.round((attendedDays / daysRecorded) * 100) : 0,
+    };
+
+    const days = records.map((r) => ({
+      _id: r._id,
+      date: r.date,
+      status: r.status,
+      checkIn: r.checkIn || null,
+      checkOut: r.checkOut || null,
+      workHours: r.workHours || 0,
+      notes: r.notes || '',
+    }));
+
+    res.status(200).json({
+      success: true,
+      data: { summary, days },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};

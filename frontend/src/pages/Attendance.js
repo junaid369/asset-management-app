@@ -13,9 +13,18 @@ import {
   MenuItem,
   IconButton,
   Alert,
+  Tabs,
+  Tab,
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
-import { Add, Edit, Delete, Login as LoginIcon, Logout as LogoutIcon } from '@mui/icons-material';
+import {
+  Add,
+  Edit,
+  Delete,
+  Login as LoginIcon,
+  Logout as LogoutIcon,
+  Download as DownloadIcon,
+} from '@mui/icons-material';
 import attendanceService from '../services/attendanceService';
 import userService from '../services/userService';
 import { useAuth } from '../context/AuthContext';
@@ -67,6 +76,62 @@ const combineDateTime = (dateStr, time) => {
   return new Date(y, mo - 1, d, h, m).toISOString();
 };
 
+// Current "YYYY-MM" for the month picker default
+const currentMonth = () => todayStr().slice(0, 7);
+
+const formatDate = (value) =>
+  value ? new Date(value).toLocaleDateString([], { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+
+const STATUS_LABELS = STATUS_OPTIONS.reduce((acc, s) => ({ ...acc, [s.value]: s.label }), {});
+
+// Build a CSV string from the report and trigger a browser download.
+const downloadReportCsv = (summary, days, employeeName) => {
+  const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const lines = [];
+  lines.push(`Attendance Report`);
+  lines.push(`Employee,${esc(employeeName)}`);
+  lines.push(`Month,${esc(summary.month)}`);
+  lines.push('');
+  lines.push('Present,Absent,Late,Half-day,On-leave,Holiday,Days Recorded,Total Hours,Attendance %');
+  lines.push(
+    [
+      summary.present,
+      summary.absent,
+      summary.late,
+      summary.halfDay,
+      summary.onLeave,
+      summary.holiday,
+      summary.daysRecorded,
+      summary.totalWorkHours,
+      `${summary.attendancePercentage}%`,
+    ].join(',')
+  );
+  lines.push('');
+  lines.push('Date,Status,Check In,Check Out,Hours,Notes');
+  days.forEach((d) => {
+    lines.push(
+      [
+        esc(formatDate(d.date)),
+        esc(STATUS_LABELS[d.status] || d.status),
+        esc(formatTime(d.checkIn)),
+        esc(formatTime(d.checkOut)),
+        d.workHours || 0,
+        esc(d.notes),
+      ].join(',')
+    );
+  });
+
+  const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `attendance_${(employeeName || 'employee').replace(/\s+/g, '_')}_${summary.month}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
+
 export default function Attendance() {
   const { user } = useAuth();
   const { mode } = useThemeMode();
@@ -83,6 +148,7 @@ export default function Attendance() {
     rowBg: isDark ? '#1a1a1a' : '#ffffff',
     rowHover: isDark ? 'rgba(212, 175, 55, 0.08)' : 'rgba(212, 175, 55, 0.06)',
     cellText: isDark ? '#ffffff' : '#2d3748',
+    subText: isDark ? 'rgba(255, 255, 255, 0.6)' : '#718096',
     border: isDark ? '2px solid rgba(212, 175, 55, 0.3)' : '1px solid rgba(212, 175, 55, 0.25)',
     divider: isDark ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid rgba(0, 0, 0, 0.06)',
     dialogBg: isDark ? '#1a1a1a' : '#ffffff',
@@ -128,6 +194,74 @@ export default function Attendance() {
     transition: 'all 0.3s ease',
   };
 
+  const dataGridSx = {
+    border: 'none',
+    '& .MuiDataGrid-main': { backgroundColor: t.paperBg },
+    '& .MuiDataGrid-columnHeaders': {
+      backgroundColor: t.headerBg,
+      borderBottom: '2px solid #D4AF37',
+      color: '#B8941F',
+      fontSize: '0.875rem',
+      fontWeight: 700,
+      textTransform: 'uppercase',
+      letterSpacing: '0.5px',
+    },
+    '& .MuiDataGrid-columnHeaderTitle': { color: '#B8941F', fontWeight: 700 },
+    '& .MuiDataGrid-row': {
+      backgroundColor: t.rowBg,
+      borderBottom: t.divider,
+      '&:hover': { backgroundColor: t.rowHover },
+    },
+    '& .MuiDataGrid-cell': {
+      color: t.cellText,
+      borderBottom: t.divider,
+      fontSize: '0.875rem',
+    },
+    '& .MuiDataGrid-footerContainer': {
+      backgroundColor: t.footerBg,
+      borderTop: '2px solid #D4AF37',
+      color: t.cellText,
+    },
+    '& .MuiTablePagination-root': { color: t.cellText },
+    '& .MuiTablePagination-selectIcon': { color: '#D4AF37' },
+    '& .MuiIconButton-root': { color: '#D4AF37' },
+    '& .MuiDataGrid-overlay': { backgroundColor: t.paperBg, color: t.cellText },
+  };
+
+  // Columns for the report tab's day-by-day breakdown
+  const reportColumns = [
+    { field: 'date', headerName: 'Date', width: 150, renderCell: (p) => formatDate(p.value) },
+    {
+      field: 'status',
+      headerName: 'Status',
+      width: 130,
+      renderCell: (params) => {
+        const c = STATUS_COLORS[params.value] || { bg: 'rgba(255,255,255,0.1)', text: '#999' };
+        return (
+          <Box
+            sx={{
+              px: 2,
+              py: 0.5,
+              borderRadius: 1,
+              backgroundColor: c.bg,
+              color: c.text,
+              fontWeight: 700,
+              fontSize: '0.75rem',
+              textTransform: 'uppercase',
+            }}
+          >
+            {STATUS_LABELS[params.value] || params.value}
+          </Box>
+        );
+      },
+    },
+    { field: 'checkIn', headerName: 'Check In', width: 120, renderCell: (p) => formatTime(p.value) },
+    { field: 'checkOut', headerName: 'Check Out', width: 120, renderCell: (p) => formatTime(p.value) },
+    { field: 'workHours', headerName: 'Hours', width: 90, renderCell: (p) => (p.value ? p.value.toFixed(2) : '—') },
+    { field: 'notes', headerName: 'Notes', flex: 1, minWidth: 150 },
+  ];
+
+  const [tab, setTab] = useState(0); // 0 = Records, 1 = Report
   const [records, setRecords] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -136,6 +270,12 @@ export default function Attendance() {
   const [editing, setEditing] = useState(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  // Report tab state
+  const [reportUser, setReportUser] = useState('');
+  const [reportMonth, setReportMonth] = useState(currentMonth());
+  const [report, setReport] = useState(null);
+  const [reportLoading, setReportLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     user: '',
@@ -168,6 +308,28 @@ export default function Attendance() {
   useEffect(() => {
     fetchRecords();
   }, [fetchRecords]);
+
+  const fetchReport = async () => {
+    if (!reportUser) {
+      flash(setError, 'Please select an employee');
+      return;
+    }
+    setReportLoading(true);
+    setReport(null);
+    try {
+      const res = await attendanceService.getReport({ user: reportUser, month: reportMonth });
+      setReport(res.data.data);
+    } catch (err) {
+      flash(setError, err.response?.data?.message || 'Failed to generate report');
+    } finally {
+      setReportLoading(false);
+    }
+  };
+
+  const reportEmployeeName = () => {
+    const u = users.find((x) => x._id === reportUser);
+    return u ? `${u.firstName} ${u.lastName}` : '';
+  };
 
   useEffect(() => {
     if (!isManager) return;
@@ -375,20 +537,44 @@ export default function Attendance() {
         <Typography variant="h4" sx={{ fontWeight: 700, color: t.heading, letterSpacing: '0.5px' }}>
           Attendance
         </Typography>
-        <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
-          <Button variant="outlined" startIcon={<LoginIcon />} onClick={handleCheckIn} sx={goldOutlinedBtn}>
-            Check In
-          </Button>
-          <Button variant="outlined" startIcon={<LogoutIcon />} onClick={handleCheckOut} sx={goldOutlinedBtn}>
-            Check Out
-          </Button>
-          {isManager && (
-            <Button variant="contained" startIcon={<Add />} onClick={() => handleOpenDialog()} sx={goldContainedBtn}>
-              Mark Attendance
+        {tab === 0 && (
+          <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+            <Button variant="outlined" startIcon={<LoginIcon />} onClick={handleCheckIn} sx={goldOutlinedBtn}>
+              Check In
             </Button>
-          )}
-        </Box>
+            <Button variant="outlined" startIcon={<LogoutIcon />} onClick={handleCheckOut} sx={goldOutlinedBtn}>
+              Check Out
+            </Button>
+            {isManager && (
+              <Button variant="contained" startIcon={<Add />} onClick={() => handleOpenDialog()} sx={goldContainedBtn}>
+                Mark Attendance
+              </Button>
+            )}
+          </Box>
+        )}
       </Box>
+
+      {isManager && (
+        <Tabs
+          value={tab}
+          onChange={(e, v) => setTab(v)}
+          sx={{
+            mb: 3,
+            borderBottom: t.divider,
+            '& .MuiTab-root': {
+              color: isDark ? 'rgba(255,255,255,0.6)' : '#718096',
+              fontWeight: 600,
+              textTransform: 'none',
+              fontSize: '0.95rem',
+            },
+            '& .Mui-selected': { color: '#B8941F !important' },
+            '& .MuiTabs-indicator': { backgroundColor: '#D4AF37', height: 3 },
+          }}
+        >
+          <Tab label="Records" />
+          <Tab label="Monthly Report" />
+        </Tabs>
+      )}
 
       {error && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
@@ -401,69 +587,55 @@ export default function Attendance() {
         </Alert>
       )}
 
-      <Box sx={{ mb: 2, maxWidth: 240 }}>
-        <TextField
-          fullWidth
-          type="date"
-          label="Filter by date"
-          InputLabelProps={{ shrink: true }}
-          value={filterDate}
-          onChange={(e) => setFilterDate(e.target.value)}
-          sx={formFieldStyles}
-        />
-      </Box>
+      {tab === 0 && (
+        <>
+          <Box sx={{ mb: 2, maxWidth: 240 }}>
+            <TextField
+              fullWidth
+              type="date"
+              label="Filter by date"
+              InputLabelProps={{ shrink: true }}
+              value={filterDate}
+              onChange={(e) => setFilterDate(e.target.value)}
+              sx={formFieldStyles}
+            />
+          </Box>
 
-      <Paper
-        sx={{
-          backgroundColor: t.paperBg,
-          border: t.border,
-          borderRadius: 2,
-          overflow: 'hidden',
-        }}
-      >
-        <DataGrid
-          rows={records}
-          columns={columns}
-          getRowId={(row) => row._id}
-          loading={loading}
-          autoHeight
-          pageSizeOptions={[10, 25, 50]}
-          initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
-          sx={{
-            border: 'none',
-            '& .MuiDataGrid-main': { backgroundColor: t.paperBg },
-            '& .MuiDataGrid-columnHeaders': {
-              backgroundColor: t.headerBg,
-              borderBottom: '2px solid #D4AF37',
-              color: '#B8941F',
-              fontSize: '0.875rem',
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px',
-            },
-            '& .MuiDataGrid-columnHeaderTitle': { color: '#B8941F', fontWeight: 700 },
-            '& .MuiDataGrid-row': {
-              backgroundColor: t.rowBg,
-              borderBottom: t.divider,
-              '&:hover': { backgroundColor: t.rowHover },
-            },
-            '& .MuiDataGrid-cell': {
-              color: t.cellText,
-              borderBottom: t.divider,
-              fontSize: '0.875rem',
-            },
-            '& .MuiDataGrid-footerContainer': {
-              backgroundColor: t.footerBg,
-              borderTop: '2px solid #D4AF37',
-              color: t.cellText,
-            },
-            '& .MuiTablePagination-root': { color: t.cellText },
-            '& .MuiTablePagination-selectIcon': { color: '#D4AF37' },
-            '& .MuiIconButton-root': { color: '#D4AF37' },
-            '& .MuiDataGrid-overlay': { backgroundColor: t.paperBg, color: t.cellText },
-          }}
+          <Paper sx={{ backgroundColor: t.paperBg, border: t.border, borderRadius: 2, overflow: 'hidden' }}>
+            <DataGrid
+              rows={records}
+              columns={columns}
+              getRowId={(row) => row._id}
+              loading={loading}
+              autoHeight
+              pageSizeOptions={[10, 25, 50]}
+              initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
+              sx={dataGridSx}
+            />
+          </Paper>
+        </>
+      )}
+
+      {tab === 1 && isManager && (
+        <ReportTab
+          t={t}
+          isDark={isDark}
+          users={users}
+          formFieldStyles={formFieldStyles}
+          goldContainedBtn={goldContainedBtn}
+          goldOutlinedBtn={goldOutlinedBtn}
+          reportUser={reportUser}
+          setReportUser={setReportUser}
+          reportMonth={reportMonth}
+          setReportMonth={setReportMonth}
+          report={report}
+          reportLoading={reportLoading}
+          fetchReport={fetchReport}
+          reportColumns={reportColumns}
+          dataGridSx={dataGridSx}
+          onDownload={() => downloadReportCsv(report.summary, report.days, reportEmployeeName())}
         />
-      </Paper>
+      )}
 
       {/* Mark / Edit Attendance Dialog */}
       <Dialog
@@ -608,6 +780,166 @@ export default function Attendance() {
           </Button>
         </DialogActions>
       </Dialog>
+    </Box>
+  );
+}
+
+// A single summary stat card for the report
+function SummaryCard({ label, value, color, t }) {
+  return (
+    <Paper
+      sx={{
+        p: 2.5,
+        backgroundColor: t.paperBg,
+        border: t.border,
+        borderRadius: 2,
+        textAlign: 'center',
+        height: '100%',
+      }}
+    >
+      <Typography
+        sx={{
+          color: t.subText || (t.cellText),
+          fontWeight: 600,
+          fontSize: '0.7rem',
+          textTransform: 'uppercase',
+          letterSpacing: '0.8px',
+          mb: 1,
+        }}
+      >
+        {label}
+      </Typography>
+      <Typography variant="h4" sx={{ color: color || t.heading, fontWeight: 700 }}>
+        {value}
+      </Typography>
+    </Paper>
+  );
+}
+
+// The Monthly Report tab: employee + month selectors, summary cards,
+// day-by-day breakdown, and CSV download.
+function ReportTab({
+  t,
+  users,
+  formFieldStyles,
+  goldContainedBtn,
+  goldOutlinedBtn,
+  reportUser,
+  setReportUser,
+  reportMonth,
+  setReportMonth,
+  report,
+  reportLoading,
+  fetchReport,
+  reportColumns,
+  dataGridSx,
+  onDownload,
+}) {
+  const s = report?.summary;
+
+  return (
+    <Box>
+      <Paper sx={{ p: 2.5, mb: 3, backgroundColor: t.paperBg, border: t.border, borderRadius: 2 }}>
+        <Grid container spacing={2} alignItems="center">
+          <Grid item xs={12} md={5}>
+            <TextField
+              fullWidth
+              select
+              label="Employee"
+              value={reportUser}
+              onChange={(e) => setReportUser(e.target.value)}
+              sx={formFieldStyles}
+            >
+              {users.length === 0 && (
+                <MenuItem value="" disabled>
+                  No employees available
+                </MenuItem>
+              )}
+              {users.map((u) => (
+                <MenuItem key={u._id} value={u._id}>
+                  {u.firstName} {u.lastName}
+                  {u.employeeId ? ` (${u.employeeId})` : ''}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <TextField
+              fullWidth
+              type="month"
+              label="Month"
+              InputLabelProps={{ shrink: true }}
+              value={reportMonth}
+              onChange={(e) => setReportMonth(e.target.value)}
+              sx={formFieldStyles}
+            />
+          </Grid>
+          <Grid item xs={12} md={3}>
+            <Button fullWidth variant="contained" onClick={fetchReport} sx={goldContainedBtn}>
+              Generate
+            </Button>
+          </Grid>
+        </Grid>
+      </Paper>
+
+      {reportLoading && (
+        <Typography sx={{ color: t.cellText, textAlign: 'center', py: 4 }}>
+          Generating report…
+        </Typography>
+      )}
+
+      {!reportLoading && s && (
+        <>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
+            <Typography variant="h6" sx={{ color: t.heading, fontWeight: 700 }}>
+              {s.employee ? `${s.employee.firstName} ${s.employee.lastName}` : 'Employee'} — {s.month}
+            </Typography>
+            <Button variant="outlined" startIcon={<DownloadIcon />} onClick={onDownload} sx={goldOutlinedBtn}>
+              Download CSV
+            </Button>
+          </Box>
+
+          <Grid container spacing={2} sx={{ mb: 3 }}>
+            <Grid item xs={6} sm={4} md={2}>
+              <SummaryCard label="Present" value={s.present} color="#43a047" t={t} />
+            </Grid>
+            <Grid item xs={6} sm={4} md={2}>
+              <SummaryCard label="Late" value={s.late} color="#f9a825" t={t} />
+            </Grid>
+            <Grid item xs={6} sm={4} md={2}>
+              <SummaryCard label="Absent" value={s.absent} color="#e53935" t={t} />
+            </Grid>
+            <Grid item xs={6} sm={4} md={2}>
+              <SummaryCard label="On Leave" value={s.onLeave} color="#1e88e5" t={t} />
+            </Grid>
+            <Grid item xs={6} sm={4} md={2}>
+              <SummaryCard label="Total Hours" value={s.totalWorkHours} color="#B8941F" t={t} />
+            </Grid>
+            <Grid item xs={6} sm={4} md={2}>
+              <SummaryCard label="Attendance" value={`${s.attendancePercentage}%`} color="#B8941F" t={t} />
+            </Grid>
+          </Grid>
+
+          <Paper sx={{ backgroundColor: t.paperBg, border: t.border, borderRadius: 2, overflow: 'hidden' }}>
+            <DataGrid
+              rows={report.days}
+              columns={reportColumns}
+              getRowId={(row) => row._id}
+              autoHeight
+              pageSizeOptions={[10, 31, 50]}
+              initialState={{ pagination: { paginationModel: { pageSize: 31 } } }}
+              sx={dataGridSx}
+              localeText={{ noRowsLabel: 'No attendance recorded for this month' }}
+            />
+          </Paper>
+        </>
+      )}
+
+      {!reportLoading && !s && (
+        <Typography sx={{ color: t.subText || t.cellText, textAlign: 'center', py: 4 }}>
+          Select an employee and month, then click Generate.
+        </Typography>
+      )}
     </Box>
   );
 }

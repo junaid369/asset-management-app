@@ -22,6 +22,9 @@ const attendanceService = {
 
   // Daily summary stats
   getSummary: (params) => api.get('/attendance/summary', { params }),
+
+  // Monthly report for a single user: { user, month: 'YYYY-MM' }
+  getReport: (params) => api.get('/attendance/report', { params }),
 };
 
 export default attendanceService;

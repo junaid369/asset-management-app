@@ -9,6 +9,7 @@ const {
   checkIn,
   checkOut,
   getAttendanceSummary,
+  getMonthlyReport,
 } = require('../controllers/attendanceController');
 
 const { protect, authorize } = require('../middleware/auth');
@@ -21,6 +22,9 @@ router.post('/check-out', checkOut);
 
 // Summary stats (admin/manager)
 router.get('/summary', authorize('admin', 'manager'), getAttendanceSummary);
+
+// Monthly report for a single user (admin/manager)
+router.get('/report', authorize('admin', 'manager'), getMonthlyReport);
 
 router
   .route('/')
