@@ -310,14 +310,18 @@ export default function Attendance() {
   }, [fetchRecords]);
 
   const fetchReport = async () => {
-    if (!reportUser) {
+    // Managers must pick an employee; employees always report on themselves,
+    // so the backend ignores/derives the user for them.
+    if (isManager && !reportUser) {
       flash(setError, 'Please select an employee');
       return;
     }
     setReportLoading(true);
     setReport(null);
     try {
-      const res = await attendanceService.getReport({ user: reportUser, month: reportMonth });
+      const params = { month: reportMonth };
+      if (isManager && reportUser) params.user = reportUser;
+      const res = await attendanceService.getReport(params);
       setReport(res.data.data);
     } catch (err) {
       flash(setError, err.response?.data?.message || 'Failed to generate report');
@@ -327,6 +331,7 @@ export default function Attendance() {
   };
 
   const reportEmployeeName = () => {
+    if (!isManager) return `${user?.firstName || ''} ${user?.lastName || ''}`.trim();
     const u = users.find((x) => x._id === reportUser);
     return u ? `${u.firstName} ${u.lastName}` : '';
   };
@@ -554,27 +559,25 @@ export default function Attendance() {
         )}
       </Box>
 
-      {isManager && (
-        <Tabs
-          value={tab}
-          onChange={(e, v) => setTab(v)}
-          sx={{
-            mb: 3,
-            borderBottom: t.divider,
-            '& .MuiTab-root': {
-              color: isDark ? 'rgba(255,255,255,0.6)' : '#718096',
-              fontWeight: 600,
-              textTransform: 'none',
-              fontSize: '0.95rem',
-            },
-            '& .Mui-selected': { color: '#B8941F !important' },
-            '& .MuiTabs-indicator': { backgroundColor: '#D4AF37', height: 3 },
-          }}
-        >
-          <Tab label="Records" />
-          <Tab label="Monthly Report" />
-        </Tabs>
-      )}
+      <Tabs
+        value={tab}
+        onChange={(e, v) => setTab(v)}
+        sx={{
+          mb: 3,
+          borderBottom: t.divider,
+          '& .MuiTab-root': {
+            color: isDark ? 'rgba(255,255,255,0.6)' : '#718096',
+            fontWeight: 600,
+            textTransform: 'none',
+            fontSize: '0.95rem',
+          },
+          '& .Mui-selected': { color: '#B8941F !important' },
+          '& .MuiTabs-indicator': { backgroundColor: '#D4AF37', height: 3 },
+        }}
+      >
+        <Tab label={isManager ? 'Records' : 'My Attendance'} />
+        <Tab label="Monthly Report" />
+      </Tabs>
 
       {error && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
@@ -616,10 +619,11 @@ export default function Attendance() {
         </>
       )}
 
-      {tab === 1 && isManager && (
+      {tab === 1 && (
         <ReportTab
           t={t}
           isDark={isDark}
+          isManager={isManager}
           users={users}
           formFieldStyles={formFieldStyles}
           goldContainedBtn={goldContainedBtn}
@@ -820,6 +824,7 @@ function SummaryCard({ label, value, color, t }) {
 // day-by-day breakdown, and CSV download.
 function ReportTab({
   t,
+  isManager,
   users,
   formFieldStyles,
   goldContainedBtn,
@@ -841,29 +846,31 @@ function ReportTab({
     <Box>
       <Paper sx={{ p: 2.5, mb: 3, backgroundColor: t.paperBg, border: t.border, borderRadius: 2 }}>
         <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} md={5}>
-            <TextField
-              fullWidth
-              select
-              label="Employee"
-              value={reportUser}
-              onChange={(e) => setReportUser(e.target.value)}
-              sx={formFieldStyles}
-            >
-              {users.length === 0 && (
-                <MenuItem value="" disabled>
-                  No employees available
-                </MenuItem>
-              )}
-              {users.map((u) => (
-                <MenuItem key={u._id} value={u._id}>
-                  {u.firstName} {u.lastName}
-                  {u.employeeId ? ` (${u.employeeId})` : ''}
-                </MenuItem>
-              ))}
-            </TextField>
-          </Grid>
-          <Grid item xs={12} md={4}>
+          {isManager && (
+            <Grid item xs={12} md={5}>
+              <TextField
+                fullWidth
+                select
+                label="Employee"
+                value={reportUser}
+                onChange={(e) => setReportUser(e.target.value)}
+                sx={formFieldStyles}
+              >
+                {users.length === 0 && (
+                  <MenuItem value="" disabled>
+                    No employees available
+                  </MenuItem>
+                )}
+                {users.map((u) => (
+                  <MenuItem key={u._id} value={u._id}>
+                    {u.firstName} {u.lastName}
+                    {u.employeeId ? ` (${u.employeeId})` : ''}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+          )}
+          <Grid item xs={12} md={isManager ? 4 : 8}>
             <TextField
               fullWidth
               type="month"
@@ -874,7 +881,7 @@ function ReportTab({
               sx={formFieldStyles}
             />
           </Grid>
-          <Grid item xs={12} md={3}>
+          <Grid item xs={12} md={isManager ? 3 : 4}>
             <Button fullWidth variant="contained" onClick={fetchReport} sx={goldContainedBtn}>
               Generate
             </Button>

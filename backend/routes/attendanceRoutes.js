@@ -23,8 +23,9 @@ router.post('/check-out', checkOut);
 // Summary stats (admin/manager)
 router.get('/summary', authorize('admin', 'manager'), getAttendanceSummary);
 
-// Monthly report for a single user (admin/manager)
-router.get('/report', authorize('admin', 'manager'), getMonthlyReport);
+// Monthly report. Admin/manager can report on anyone; employees are
+// restricted to their own record inside the controller.
+router.get('/report', getMonthlyReport);
 
 router
   .route('/')

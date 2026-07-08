@@ -61,8 +61,8 @@ const server = app.listen(PORT, () => {
   console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
 });
 
-// Handle unhandled promise rejections
-process.on('unhandledRejection', (err, promise) => {
-  console.log(`Error: ${err.message}`);
-  server.close(() => process.exit(1));
+// Log unhandled promise rejections instead of crashing. A transient DB
+// timeout should not take the whole server down; the driver reconnects.
+process.on('unhandledRejection', (err) => {
+  console.error(`Unhandled rejection: ${err.message}`);
 });

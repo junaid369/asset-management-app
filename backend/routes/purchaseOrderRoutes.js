@@ -13,6 +13,9 @@ const {
 const { protect, authorize } = require('../middleware/auth');
 
 router.use(protect);
+// The entire Purchase Orders module is restricted to admin/manager.
+// Employees have no PO access at all (not just hidden in the nav).
+router.use(authorize('admin', 'manager'));
 
 router.get('/stats/overview', getPurchaseOrderStats);
 

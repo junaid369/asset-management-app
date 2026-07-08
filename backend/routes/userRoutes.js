@@ -17,9 +17,9 @@ router
 router
   .route('/:id')
   .get(protect, authorize('admin', 'manager'), getUser)
-  .put(protect, authorize('admin'), updateUser)
+  .put(protect, authorize('admin', 'manager'), updateUser)
   .delete(protect, authorize('admin'), deleteUser);
 
-router.route('/:id/toggle-status').put(protect, authorize('admin'), toggleUserStatus);
+router.route('/:id/toggle-status').put(protect, authorize('admin', 'manager'), toggleUserStatus);
 
 module.exports = router;

@@ -11,6 +11,9 @@ const {
 const { protect, authorize } = require('../middleware/auth');
 
 router.use(protect);
+// The entire Vendors module is restricted to admin/manager.
+// Employees have no vendor access at all (not just hidden in the nav).
+router.use(authorize('admin', 'manager'));
 
 router
   .route('/')

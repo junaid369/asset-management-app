@@ -367,7 +367,13 @@ exports.getAttendanceSummary = async (req, res) => {
 // @access  Private (Admin, Manager)
 exports.getMonthlyReport = async (req, res) => {
   try {
-    const { user, month } = req.query;
+    let { user, month } = req.query;
+
+    // Employees can only ever report on themselves, regardless of the
+    // requested user param.
+    if (req.user.role === 'employee') {
+      user = req.user._id.toString();
+    }
 
     if (!user || !month) {
       return res.status(400).json({

@@ -175,7 +175,7 @@ export default function Users() {
       sortable: false,
       renderCell: (params) => (
         <Box>
-          {currentUser?.role === 'admin' && (
+          {(currentUser?.role === 'admin' || currentUser?.role === 'manager') && (
             <>
               <IconButton
                 size="small"
@@ -192,15 +192,17 @@ export default function Users() {
               >
                 {params.row.isActive ? <Block /> : <CheckCircle />}
               </IconButton>
-              <IconButton
-                size="small"
-                onClick={() => handleDelete(params.row._id)}
-                title="Delete"
-                color="error"
-              >
-                <Delete />
-              </IconButton>
             </>
+          )}
+          {currentUser?.role === 'admin' && (
+            <IconButton
+              size="small"
+              onClick={() => handleDelete(params.row._id)}
+              title="Delete"
+              color="error"
+            >
+              <Delete />
+            </IconButton>
           )}
         </Box>
       ),
@@ -210,7 +212,7 @@ export default function Users() {
   return (
     <Box sx={{ maxWidth: '1600px', mx: 'auto' }}>
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
-        {currentUser?.role === 'admin' && (
+        {(currentUser?.role === 'admin' || currentUser?.role === 'manager') && (
           <Button
             variant="contained"
             startIcon={<Add />}

@@ -13,9 +13,15 @@ exports.getAssets = async (req, res) => {
     // Build query
     const query = {};
 
+    // Employees only see assets assigned to them; managers/admins see all.
+    if (req.user.role === 'employee') {
+      query.assignedTo = req.user._id;
+    } else if (assignedTo) {
+      query.assignedTo = assignedTo;
+    }
+
     if (status) query.status = status;
     if (category) query.category = category;
-    if (assignedTo) query.assignedTo = assignedTo;
     if (search) {
       query.$or = [
         { name: { $regex: search, $options: 'i' } },
@@ -62,6 +68,17 @@ exports.getAsset = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: 'Asset not found',
+      });
+    }
+
+    // Employees may only view an asset assigned to them
+    if (
+      req.user.role === 'employee' &&
+      String(asset.assignedTo?._id || asset.assignedTo) !== String(req.user._id)
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to view this asset',
       });
     }
 
