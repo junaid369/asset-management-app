@@ -28,6 +28,7 @@ import purchaseOrderService from '../services/purchaseOrderService';
 import vendorService from '../services/vendorService';
 import categoryService from '../services/categoryService';
 import { useAuth } from '../context/AuthContext';
+import { useThemeMode } from '../contexts/ThemeContext';
 
 const statusColors = {
   draft: 'default',
@@ -38,33 +39,42 @@ const statusColors = {
   cancelled: 'error',
 };
 
-const formFieldStyles = {
-  '& .MuiInputLabel-root': {
-    color: '#D4AF37',
-  },
-  '& .MuiInputLabel-root.Mui-focused': {
-    color: '#FFD700',
-  },
-  '& .MuiOutlinedInput-root': {
-    color: '#ffffff',
-    backgroundColor: '#2a2a2a',
-    '& fieldset': {
-      borderColor: 'rgba(212, 175, 55, 0.3)',
+const getThemeStyles = (isDark) => ({
+  heading: isDark ? '#ffffff' : '#2d3748',
+  paperBg: isDark ? '#1a1a1a' : '#ffffff',
+  fieldBg: isDark ? '#2a2a2a' : '#ffffff',
+  fieldText: isDark ? '#ffffff' : '#2d3748',
+  headerBg: isDark ? '#2a2a2a' : '#faf7ec',
+  rowBg: isDark ? '#1a1a1a' : '#ffffff',
+  rowHover: isDark ? 'rgba(212, 175, 55, 0.08)' : 'rgba(212, 175, 55, 0.06)',
+  cellText: isDark ? '#ffffff' : '#2d3748',
+  border: isDark ? '2px solid rgba(212, 175, 55, 0.3)' : '1px solid rgba(212, 175, 55, 0.25)',
+  divider: isDark ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid rgba(0, 0, 0, 0.06)',
+  dialogBg: isDark ? '#1a1a1a' : '#ffffff',
+  footerBg: isDark ? '#2a2a2a' : '#faf7ec',
+  formField: {
+    '& .MuiInputLabel-root': { color: '#B8941F' },
+    '& .MuiInputLabel-root.Mui-focused': { color: '#D4AF37' },
+    '& .MuiOutlinedInput-root': {
+      color: isDark ? '#ffffff' : '#2d3748',
+      backgroundColor: isDark ? '#2a2a2a' : '#ffffff',
+      '& fieldset': { borderColor: 'rgba(212, 175, 55, 0.35)' },
+      '&:hover fieldset': { borderColor: '#D4AF37' },
+      '&.Mui-focused fieldset': { borderColor: '#D4AF37', borderWidth: 2 },
     },
-    '&:hover fieldset': {
-      borderColor: '#D4AF37',
-    },
-    '&.Mui-focused fieldset': {
-      borderColor: '#FFD700',
-      borderWidth: 2,
+    '& .MuiSvgIcon-root': { color: '#D4AF37' },
+    '& .MuiInputBase-input::placeholder': {
+      color: isDark ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.4)',
+      opacity: 1,
     },
   },
-  '& .MuiSvgIcon-root': {
-    color: '#D4AF37',
-  },
-};
+});
 
 export default function PurchaseOrders() {
+  const { mode } = useThemeMode();
+  const isDark = mode === 'dark';
+  const t = getThemeStyles(isDark);
+  const formFieldStyles = t.formField;
   const [pos, setPOs] = useState([]);
   const [vendors, setVendors] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -430,7 +440,7 @@ export default function PurchaseOrders() {
           variant="h4"
           sx={{
             fontWeight: 700,
-            color: '#ffffff',
+            color: t.heading,
             letterSpacing: '0.5px',
           }}
         >
@@ -475,8 +485,8 @@ export default function PurchaseOrders() {
 
       <Paper
         sx={{
-          backgroundColor: '#1a1a1a',
-          border: '2px solid rgba(212, 175, 55, 0.3)',
+          backgroundColor: t.paperBg,
+          border: t.border,
           borderRadius: 2,
           overflow: 'hidden',
         }}
@@ -496,41 +506,46 @@ export default function PurchaseOrders() {
           sx={{
             border: 'none',
             '& .MuiDataGrid-main': {
-              backgroundColor: '#1a1a1a',
+              backgroundColor: t.paperBg,
             },
             '& .MuiDataGrid-columnHeaders': {
-              backgroundColor: '#2a2a2a',
+              backgroundColor: t.headerBg,
               borderBottom: '2px solid #D4AF37',
-              color: '#D4AF37',
+              color: '#B8941F',
               fontSize: '0.875rem',
               fontWeight: 700,
               textTransform: 'uppercase',
             },
             '& .MuiDataGrid-columnHeaderTitle': {
-              color: '#D4AF37',
+              color: '#B8941F',
               fontWeight: 700,
             },
             '& .MuiDataGrid-row': {
-              backgroundColor: '#1a1a1a',
-              borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+              backgroundColor: t.rowBg,
+              borderBottom: t.divider,
               '&:hover': {
-                backgroundColor: 'rgba(212, 175, 55, 0.08)',
+                backgroundColor: t.rowHover,
               },
             },
             '& .MuiDataGrid-cell': {
-              color: '#ffffff',
-              borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+              color: t.cellText,
+              borderBottom: t.divider,
               fontSize: '0.875rem',
             },
             '& .MuiDataGrid-footerContainer': {
-              backgroundColor: '#2a2a2a',
+              backgroundColor: t.footerBg,
               borderTop: '2px solid #D4AF37',
+              color: t.cellText,
             },
             '& .MuiTablePagination-root': {
-              color: '#ffffff',
+              color: t.cellText,
             },
             '& .MuiIconButton-root': {
               color: '#D4AF37',
+            },
+            '& .MuiDataGrid-overlay': {
+              backgroundColor: t.paperBg,
+              color: t.cellText,
             },
           }}
         />
@@ -544,17 +559,17 @@ export default function PurchaseOrders() {
         fullWidth
         PaperProps={{
           sx: {
-            backgroundColor: '#1a1a1a',
-            border: '2px solid rgba(212, 175, 55, 0.3)',
+            backgroundColor: t.dialogBg,
+            border: t.border,
             borderRadius: 2,
           },
         }}
       >
         <DialogTitle
           sx={{
-            backgroundColor: '#2a2a2a',
+            backgroundColor: t.headerBg,
             borderBottom: '2px solid #D4AF37',
-            color: '#FFD700',
+            color: '#B8941F',
             fontWeight: 700,
             fontSize: '1.25rem',
           }}
@@ -732,7 +747,7 @@ export default function PurchaseOrders() {
               <Grid item xs={12}>
                 <TableContainer
                   component={Paper}
-                  sx={{ backgroundColor: '#2a2a2a', mt: 2 }}
+                  sx={{ backgroundColor: t.headerBg, mt: 2 }}
                 >
                   <Table>
                     <TableHead>
@@ -748,10 +763,10 @@ export default function PurchaseOrders() {
                     <TableBody>
                       {formData.items.map((item, index) => (
                         <TableRow key={index}>
-                          <TableCell sx={{ color: '#ffffff' }}>{item.description}</TableCell>
-                          <TableCell sx={{ color: '#ffffff' }}>{item.brand} {item.model}</TableCell>
-                          <TableCell sx={{ color: '#ffffff' }} align="right">{item.quantity}</TableCell>
-                          <TableCell sx={{ color: '#ffffff' }} align="right">${item.unitPrice}</TableCell>
+                          <TableCell sx={{ color: t.cellText }}>{item.description}</TableCell>
+                          <TableCell sx={{ color: t.cellText }}>{item.brand} {item.model}</TableCell>
+                          <TableCell sx={{ color: t.cellText }} align="right">{item.quantity}</TableCell>
+                          <TableCell sx={{ color: t.cellText }} align="right">${item.unitPrice}</TableCell>
                           <TableCell sx={{ color: '#FFD700', fontWeight: 700 }} align="right">
                             ${item.totalPrice}
                           </TableCell>
@@ -784,7 +799,7 @@ export default function PurchaseOrders() {
         </DialogContent>
         <DialogActions
           sx={{
-            backgroundColor: '#2a2a2a',
+            backgroundColor: t.footerBg,
             borderTop: '2px solid #D4AF37',
             px: 3,
             py: 2,
@@ -793,9 +808,9 @@ export default function PurchaseOrders() {
           <Button
             onClick={handleCloseDialog}
             sx={{
-              color: '#ffffff',
+              color: isDark ? '#ffffff' : '#2d3748',
               '&:hover': {
-                backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
               },
             }}
           >
@@ -832,7 +847,7 @@ export default function PurchaseOrders() {
         fullWidth
         PaperProps={{
           sx: {
-            backgroundColor: '#1a1a1a',
+            backgroundColor: t.dialogBg,
             border: '3px solid #D4AF37',
             borderRadius: 3,
             boxShadow: '0 8px 32px rgba(212, 175, 55, 0.4)',
@@ -841,9 +856,9 @@ export default function PurchaseOrders() {
       >
         <DialogTitle
           sx={{
-            backgroundColor: '#2a2a2a',
+            backgroundColor: t.headerBg,
             borderBottom: '2px solid #D4AF37',
-            color: '#FFD700',
+            color: '#B8941F',
             fontWeight: 700,
             fontSize: '1.4rem',
             display: 'flex',
@@ -890,7 +905,7 @@ export default function PurchaseOrders() {
               <Typography
                 variant="body1"
                 sx={{
-                  color: '#ffffff',
+                  color: t.cellText,
                   mb: 1,
                 }}
               >
@@ -899,7 +914,7 @@ export default function PurchaseOrders() {
               <Typography
                 variant="body1"
                 sx={{
-                  color: '#ffffff',
+                  color: t.cellText,
                 }}
               >
                 Total Items: <span style={{ color: '#D4AF37', fontWeight: 700 }}>{selectedPO?.items?.length || 0}</span>
@@ -918,7 +933,7 @@ export default function PurchaseOrders() {
               <Typography
                 variant="body1"
                 sx={{
-                  color: '#ffffff',
+                  color: t.cellText,
                   fontSize: '1.05rem',
                   lineHeight: 1.7,
                 }}
@@ -956,7 +971,7 @@ export default function PurchaseOrders() {
         </DialogContent>
         <DialogActions
           sx={{
-            backgroundColor: '#2a2a2a',
+            backgroundColor: t.footerBg,
             borderTop: '2px solid #D4AF37',
             px: 3,
             py: 2.5,
@@ -967,14 +982,14 @@ export default function PurchaseOrders() {
             onClick={handleCloseReceiveDialog}
             variant="outlined"
             sx={{
-              borderColor: 'rgba(255, 255, 255, 0.3)',
-              color: '#ffffff',
+              borderColor: isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.3)',
+              color: isDark ? '#ffffff' : '#2d3748',
               fontWeight: 600,
               px: 3,
               py: 1,
               '&:hover': {
-                borderColor: '#ffffff',
-                backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                borderColor: isDark ? '#ffffff' : '#2d3748',
+                backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
               },
             }}
           >

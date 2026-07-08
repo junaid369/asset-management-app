@@ -25,6 +25,7 @@ import {
   Category as CategoryIcon,
   Store as StoreIcon,
   ShoppingCart as ShoppingCartIcon,
+  AccessTime as AccessTimeIcon,
   Brightness4 as Brightness4Icon,
   Brightness7 as Brightness7Icon,
 } from '@mui/icons-material';
@@ -41,6 +42,7 @@ const menuItems = [
   { text: 'Vendors', icon: <StoreIcon />, path: '/vendors', roles: ['admin', 'manager'] },
   { text: 'Users', icon: <PeopleIcon />, path: '/users', roles: ['admin', 'manager'] },
   { text: 'Categories', icon: <CategoryIcon />, path: '/categories' },
+  { text: 'Attendance', icon: <AccessTimeIcon />, path: '/attendance' },
 ];
 
 export default function Layout({ children }) {

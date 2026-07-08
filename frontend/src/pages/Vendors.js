@@ -18,38 +18,45 @@ import { DataGrid } from '@mui/x-data-grid';
 import { Add, Edit, Delete } from '@mui/icons-material';
 import vendorService from '../services/vendorService';
 import { useAuth } from '../context/AuthContext';
+import { useThemeMode } from '../contexts/ThemeContext';
 
-const formFieldStyles = {
-  '& .MuiInputLabel-root': {
-    color: '#D4AF37',
-  },
-  '& .MuiInputLabel-root.Mui-focused': {
-    color: '#FFD700',
-  },
-  '& .MuiOutlinedInput-root': {
-    color: '#ffffff',
-    backgroundColor: '#2a2a2a',
-    '& fieldset': {
-      borderColor: 'rgba(212, 175, 55, 0.3)',
+// Theme-aware style tokens + form field styles, keyed on the current mode
+const getThemeStyles = (isDark) => ({
+  heading: isDark ? '#ffffff' : '#2d3748',
+  paperBg: isDark ? '#1a1a1a' : '#ffffff',
+  fieldBg: isDark ? '#2a2a2a' : '#ffffff',
+  fieldText: isDark ? '#ffffff' : '#2d3748',
+  headerBg: isDark ? '#2a2a2a' : '#faf7ec',
+  rowBg: isDark ? '#1a1a1a' : '#ffffff',
+  rowHover: isDark ? 'rgba(212, 175, 55, 0.08)' : 'rgba(212, 175, 55, 0.06)',
+  cellText: isDark ? '#ffffff' : '#2d3748',
+  border: isDark ? '2px solid rgba(212, 175, 55, 0.3)' : '1px solid rgba(212, 175, 55, 0.25)',
+  divider: isDark ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid rgba(0, 0, 0, 0.06)',
+  dialogBg: isDark ? '#1a1a1a' : '#ffffff',
+  footerBg: isDark ? '#2a2a2a' : '#faf7ec',
+  formField: {
+    '& .MuiInputLabel-root': { color: '#B8941F' },
+    '& .MuiInputLabel-root.Mui-focused': { color: '#D4AF37' },
+    '& .MuiOutlinedInput-root': {
+      color: isDark ? '#ffffff' : '#2d3748',
+      backgroundColor: isDark ? '#2a2a2a' : '#ffffff',
+      '& fieldset': { borderColor: 'rgba(212, 175, 55, 0.35)' },
+      '&:hover fieldset': { borderColor: '#D4AF37' },
+      '&.Mui-focused fieldset': { borderColor: '#D4AF37', borderWidth: 2 },
     },
-    '&:hover fieldset': {
-      borderColor: '#D4AF37',
-    },
-    '&.Mui-focused fieldset': {
-      borderColor: '#FFD700',
-      borderWidth: 2,
+    '& .MuiSvgIcon-root': { color: '#D4AF37' },
+    '& .MuiInputBase-input::placeholder': {
+      color: isDark ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.4)',
+      opacity: 1,
     },
   },
-  '& .MuiSvgIcon-root': {
-    color: '#D4AF37',
-  },
-  '& .MuiInputBase-input::placeholder': {
-    color: 'rgba(255, 255, 255, 0.4)',
-    opacity: 1,
-  },
-};
+});
 
 export default function Vendors() {
+  const { mode } = useThemeMode();
+  const isDark = mode === 'dark';
+  const t = getThemeStyles(isDark);
+  const formFieldStyles = t.formField;
   const [vendors, setVendors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [openDialog, setOpenDialog] = useState(false);
@@ -239,7 +246,7 @@ export default function Vendors() {
           variant="h4"
           sx={{
             fontWeight: 700,
-            color: '#ffffff',
+            color: t.heading,
             letterSpacing: '0.5px',
           }}
         >
@@ -284,8 +291,8 @@ export default function Vendors() {
 
       <Paper
         sx={{
-          backgroundColor: '#1a1a1a',
-          border: '2px solid rgba(212, 175, 55, 0.3)',
+          backgroundColor: t.paperBg,
+          border: t.border,
           borderRadius: 2,
           overflow: 'hidden',
         }}
@@ -305,46 +312,50 @@ export default function Vendors() {
           sx={{
             border: 'none',
             '& .MuiDataGrid-main': {
-              backgroundColor: '#1a1a1a',
+              backgroundColor: t.paperBg,
             },
             '& .MuiDataGrid-columnHeaders': {
-              backgroundColor: '#2a2a2a',
+              backgroundColor: t.headerBg,
               borderBottom: '2px solid #D4AF37',
-              color: '#D4AF37',
+              color: '#B8941F',
               fontSize: '0.875rem',
               fontWeight: 700,
               textTransform: 'uppercase',
               letterSpacing: '0.5px',
             },
             '& .MuiDataGrid-columnHeaderTitle': {
-              color: '#D4AF37',
+              color: '#B8941F',
               fontWeight: 700,
             },
             '& .MuiDataGrid-row': {
-              backgroundColor: '#1a1a1a',
-              borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+              backgroundColor: t.rowBg,
+              borderBottom: t.divider,
               '&:hover': {
-                backgroundColor: 'rgba(212, 175, 55, 0.08)',
+                backgroundColor: t.rowHover,
               },
             },
             '& .MuiDataGrid-cell': {
-              color: '#ffffff',
-              borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+              color: t.cellText,
+              borderBottom: t.divider,
               fontSize: '0.875rem',
             },
             '& .MuiDataGrid-footerContainer': {
-              backgroundColor: '#2a2a2a',
+              backgroundColor: t.footerBg,
               borderTop: '2px solid #D4AF37',
-              color: '#ffffff',
+              color: t.cellText,
             },
             '& .MuiTablePagination-root': {
-              color: '#ffffff',
+              color: t.cellText,
             },
             '& .MuiTablePagination-selectIcon': {
               color: '#D4AF37',
             },
             '& .MuiIconButton-root': {
               color: '#D4AF37',
+            },
+            '& .MuiDataGrid-overlay': {
+              backgroundColor: t.paperBg,
+              color: t.cellText,
             },
           }}
         />
@@ -358,17 +369,17 @@ export default function Vendors() {
         fullWidth
         PaperProps={{
           sx: {
-            backgroundColor: '#1a1a1a',
-            border: '2px solid rgba(212, 175, 55, 0.3)',
+            backgroundColor: t.dialogBg,
+            border: t.border,
             borderRadius: 2,
           },
         }}
       >
         <DialogTitle
           sx={{
-            backgroundColor: '#2a2a2a',
+            backgroundColor: t.headerBg,
             borderBottom: '2px solid #D4AF37',
-            color: '#FFD700',
+            color: '#B8941F',
             fontWeight: 700,
             fontSize: '1.25rem',
             letterSpacing: '0.5px',
@@ -507,7 +518,7 @@ export default function Vendors() {
         </DialogContent>
         <DialogActions
           sx={{
-            backgroundColor: '#2a2a2a',
+            backgroundColor: t.footerBg,
             borderTop: '2px solid #D4AF37',
             px: 3,
             py: 2,
@@ -516,9 +527,9 @@ export default function Vendors() {
           <Button
             onClick={handleCloseDialog}
             sx={{
-              color: '#ffffff',
+              color: isDark ? '#ffffff' : '#2d3748',
               '&:hover': {
-                backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
               },
             }}
           >

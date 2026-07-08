@@ -18,6 +18,7 @@ const userRoutes = require('./routes/userRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
 const vendorRoutes = require('./routes/vendorRoutes');
 const purchaseOrderRoutes = require('./routes/purchaseOrderRoutes');
+const attendanceRoutes = require('./routes/attendanceRoutes');
 
 const app = express();
 
@@ -40,6 +41,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/vendors', vendorRoutes);
 app.use('/api/purchase-orders', purchaseOrderRoutes);
+app.use('/api/attendance', attendanceRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {

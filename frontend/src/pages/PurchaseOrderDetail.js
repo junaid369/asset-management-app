@@ -18,6 +18,23 @@ import { ArrowBack, CheckCircle, LocalShipping } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
 import purchaseOrderService from '../services/purchaseOrderService';
 import { useAuth } from '../context/AuthContext';
+import { useThemeMode } from '../contexts/ThemeContext';
+
+const getThemeStyles = (isDark) => ({
+  heading: isDark ? '#ffffff' : '#2d3748',
+  paperBg: isDark ? '#1a1a1a' : '#ffffff',
+  fieldBg: isDark ? '#2a2a2a' : '#ffffff',
+  fieldText: isDark ? '#ffffff' : '#2d3748',
+  headerBg: isDark ? '#2a2a2a' : '#faf7ec',
+  rowBg: isDark ? '#1a1a1a' : '#ffffff',
+  rowHover: isDark ? 'rgba(212, 175, 55, 0.08)' : 'rgba(212, 175, 55, 0.06)',
+  cellText: isDark ? '#ffffff' : '#2d3748',
+  subText: isDark ? 'rgba(255, 255, 255, 0.7)' : '#718096',
+  border: isDark ? '2px solid rgba(212, 175, 55, 0.3)' : '1px solid rgba(212, 175, 55, 0.25)',
+  divider: isDark ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid rgba(0, 0, 0, 0.06)',
+  dialogBg: isDark ? '#1a1a1a' : '#ffffff',
+  footerBg: isDark ? '#2a2a2a' : '#faf7ec',
+});
 
 const statusColors = {
   draft: 'default',
@@ -29,6 +46,9 @@ const statusColors = {
 };
 
 export default function PurchaseOrderDetail() {
+  const { mode } = useThemeMode();
+  const isDark = mode === 'dark';
+  const t = getThemeStyles(isDark);
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -171,8 +191,8 @@ export default function PurchaseOrderDetail() {
       {/* Purchase Order Details */}
       <Paper
         sx={{
-          backgroundColor: '#1a1a1a',
-          border: '2px solid rgba(212, 175, 55, 0.3)',
+          backgroundColor: t.paperBg,
+          border: t.border,
           borderRadius: 2,
           p: 3,
           mb: 3,
@@ -196,7 +216,7 @@ export default function PurchaseOrderDetail() {
               <Typography sx={{ color: '#D4AF37', fontSize: '0.875rem', mb: 0.5 }}>
                 Vendor
               </Typography>
-              <Typography sx={{ color: '#ffffff', fontSize: '1.1rem', fontWeight: 600 }}>
+              <Typography sx={{ color: t.cellText, fontSize: '1.1rem', fontWeight: 600 }}>
                 {po.vendor?.name || 'N/A'}
               </Typography>
             </Box>
@@ -214,7 +234,7 @@ export default function PurchaseOrderDetail() {
               <Typography sx={{ color: '#D4AF37', fontSize: '0.875rem', mb: 0.5 }}>
                 Order Date
               </Typography>
-              <Typography sx={{ color: '#ffffff', fontSize: '1rem' }}>
+              <Typography sx={{ color: t.cellText, fontSize: '1rem' }}>
                 {new Date(po.orderDate).toLocaleDateString()}
               </Typography>
             </Box>
@@ -224,7 +244,7 @@ export default function PurchaseOrderDetail() {
               <Typography sx={{ color: '#D4AF37', fontSize: '0.875rem', mb: 0.5 }}>
                 Expected Delivery
               </Typography>
-              <Typography sx={{ color: '#ffffff', fontSize: '1rem' }}>
+              <Typography sx={{ color: t.cellText, fontSize: '1rem' }}>
                 {po.expectedDeliveryDate ? new Date(po.expectedDeliveryDate).toLocaleDateString() : 'N/A'}
               </Typography>
             </Box>
@@ -245,7 +265,7 @@ export default function PurchaseOrderDetail() {
                 <Typography sx={{ color: '#D4AF37', fontSize: '0.875rem', mb: 0.5 }}>
                   Notes
                 </Typography>
-                <Typography sx={{ color: '#ffffff', fontSize: '1rem', fontStyle: 'italic' }}>
+                <Typography sx={{ color: t.cellText, fontSize: '1rem', fontStyle: 'italic' }}>
                   {po.notes}
                 </Typography>
               </Box>
@@ -257,8 +277,8 @@ export default function PurchaseOrderDetail() {
       {/* Items Table */}
       <Paper
         sx={{
-          backgroundColor: '#1a1a1a',
-          border: '2px solid rgba(212, 175, 55, 0.3)',
+          backgroundColor: t.paperBg,
+          border: t.border,
           borderRadius: 2,
           overflow: 'hidden',
         }}
@@ -280,7 +300,7 @@ export default function PurchaseOrderDetail() {
         <TableContainer>
           <Table>
             <TableHead>
-              <TableRow sx={{ backgroundColor: '#2a2a2a', borderBottom: '2px solid #D4AF37' }}>
+              <TableRow sx={{ backgroundColor: t.headerBg, borderBottom: '2px solid #D4AF37' }}>
                 <TableCell sx={{ color: '#D4AF37', fontWeight: 700 }}>Description</TableCell>
                 <TableCell sx={{ color: '#D4AF37', fontWeight: 700 }}>Category</TableCell>
                 <TableCell sx={{ color: '#D4AF37', fontWeight: 700 }}>Brand/Model</TableCell>
@@ -299,24 +319,24 @@ export default function PurchaseOrderDetail() {
                   <TableRow
                     key={index}
                     sx={{
-                      backgroundColor: isFullyReceived ? 'rgba(0, 208, 132, 0.05)' : '#1a1a1a',
-                      borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+                      backgroundColor: isFullyReceived ? 'rgba(0, 208, 132, 0.05)' : t.rowBg,
+                      borderBottom: t.divider,
                     }}
                   >
-                    <TableCell sx={{ color: '#ffffff' }}>{item.description}</TableCell>
-                    <TableCell sx={{ color: '#ffffff' }}>
+                    <TableCell sx={{ color: t.cellText }}>{item.description}</TableCell>
+                    <TableCell sx={{ color: t.cellText }}>
                       {item.category?.name || 'N/A'}
                     </TableCell>
-                    <TableCell sx={{ color: '#ffffff' }}>
+                    <TableCell sx={{ color: t.cellText }}>
                       {item.brand || 'N/A'} {item.model || ''}
                     </TableCell>
-                    <TableCell sx={{ color: '#ffffff', fontSize: '0.85rem' }}>
+                    <TableCell sx={{ color: t.cellText, fontSize: '0.85rem' }}>
                       {item.specifications || '-'}
                     </TableCell>
-                    <TableCell sx={{ color: '#ffffff' }} align="right">
+                    <TableCell sx={{ color: t.cellText }} align="right">
                       {item.quantity}
                     </TableCell>
-                    <TableCell sx={{ color: '#ffffff' }} align="right">
+                    <TableCell sx={{ color: t.cellText }} align="right">
                       ${item.unitPrice.toLocaleString()}
                     </TableCell>
                     <TableCell sx={{ color: '#FFD700', fontWeight: 700 }} align="right">
@@ -350,7 +370,7 @@ export default function PurchaseOrderDetail() {
                   </TableRow>
                 );
               })}
-              <TableRow sx={{ backgroundColor: '#2a2a2a', borderTop: '2px solid #D4AF37' }}>
+              <TableRow sx={{ backgroundColor: t.footerBg, borderTop: '2px solid #D4AF37' }}>
                 <TableCell colSpan={6} sx={{ color: '#FFD700', fontWeight: 700, fontSize: '1.1rem' }} align="right">
                   GRAND TOTAL:
                 </TableCell>
@@ -368,7 +388,7 @@ export default function PurchaseOrderDetail() {
       {po.status === 'received' && po.items.some(item => item.createdAssets && item.createdAssets.length > 0) && (
         <Paper
           sx={{
-            backgroundColor: '#1a1a1a',
+            backgroundColor: t.paperBg,
             border: '2px solid rgba(0, 208, 132, 0.4)',
             borderRadius: 2,
             p: 3,
@@ -388,7 +408,7 @@ export default function PurchaseOrderDetail() {
           >
             <CheckCircle /> Created Assets
           </Typography>
-          <Typography sx={{ color: '#ffffff', mb: 2 }}>
+          <Typography sx={{ color: t.cellText, mb: 2 }}>
             This purchase order has automatically created the following assets:
           </Typography>
           {po.items.map((item, idx) => (

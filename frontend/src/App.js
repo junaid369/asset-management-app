@@ -14,6 +14,7 @@ import Categories from './pages/Categories';
 import Vendors from './pages/Vendors';
 import PurchaseOrders from './pages/PurchaseOrders';
 import PurchaseOrderDetail from './pages/PurchaseOrderDetail';
+import Attendance from './pages/Attendance';
 import Layout from './components/Layout';
 
 // Protected Route Component
@@ -45,6 +46,7 @@ function AppRoutes() {
                 <Route path="/vendors" element={<Vendors />} />
                 <Route path="/purchase-orders" element={<PurchaseOrders />} />
                 <Route path="/purchase-orders/:id" element={<PurchaseOrderDetail />} />
+                <Route path="/attendance" element={<Attendance />} />
               </Routes>
             </Layout>
           </ProtectedRoute>
