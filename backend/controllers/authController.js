@@ -10,6 +10,14 @@ exports.register = async (req, res) => {
   try {
     const { firstName, lastName, email, password, role, department, employeeId, phone } = req.body;
 
+    // Managers may create employees and managers, but not admins.
+    if (req.user?.role === 'manager' && role === 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Managers cannot create admin accounts',
+      });
+    }
+
     // Check if user exists
     const userExists = await User.findOne({ email });
     if (userExists) {

@@ -72,20 +72,39 @@ exports.getUser = async (req, res) => {
 
 // @desc    Update user
 // @route   PUT /api/users/:id
-// @access  Private (Admin)
+// @access  Private (Admin, Manager — managers cannot touch admins)
 exports.updateUser = async (req, res) => {
   try {
-    const user = await User.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true,
-    }).populate('department', 'name');
+    const target = await User.findById(req.params.id);
 
-    if (!user) {
+    if (!target) {
       return res.status(404).json({
         success: false,
         message: 'User not found',
       });
     }
+
+    // Managers may not edit admin accounts, nor grant the admin role
+    // (prevents privilege escalation / admin lockout).
+    if (req.user.role === 'manager') {
+      if (target.role === 'admin') {
+        return res.status(403).json({
+          success: false,
+          message: 'Managers cannot modify admin accounts',
+        });
+      }
+      if (req.body.role === 'admin') {
+        return res.status(403).json({
+          success: false,
+          message: 'Managers cannot assign the admin role',
+        });
+      }
+    }
+
+    const user = await User.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true,
+    }).populate('department', 'name');
 
     // Log audit
     await logAudit(req.user._id, 'update', 'user', user._id, `User ${user.email} updated`, {}, req);
@@ -144,6 +163,14 @@ exports.toggleUserStatus = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: 'User not found',
+      });
+    }
+
+    // Managers may not activate/deactivate admin accounts.
+    if (req.user.role === 'manager' && user.role === 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Managers cannot modify admin accounts',
       });
     }
 

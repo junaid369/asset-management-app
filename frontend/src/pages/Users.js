@@ -173,39 +173,48 @@ export default function Users() {
       headerName: 'Actions',
       width: 150,
       sortable: false,
-      renderCell: (params) => (
-        <Box>
-          {(currentUser?.role === 'admin' || currentUser?.role === 'manager') && (
-            <>
+      renderCell: (params) => {
+        // A manager may manage employees and other managers, but NOT admins.
+        // Only an admin can manage admin accounts. This prevents a manager
+        // from deactivating/editing the admin (lockout / privilege escalation).
+        const canManageRow =
+          currentUser?.role === 'admin' ||
+          (currentUser?.role === 'manager' && params.row.role !== 'admin');
+
+        return (
+          <Box>
+            {canManageRow && (
+              <>
+                <IconButton
+                  size="small"
+                  onClick={() => handleOpenDialog(params.row)}
+                  title="Edit"
+                >
+                  <Edit />
+                </IconButton>
+                <IconButton
+                  size="small"
+                  onClick={() => handleToggleStatus(params.row._id)}
+                  title={params.row.isActive ? 'Deactivate' : 'Activate'}
+                  color={params.row.isActive ? 'warning' : 'success'}
+                >
+                  {params.row.isActive ? <Block /> : <CheckCircle />}
+                </IconButton>
+              </>
+            )}
+            {currentUser?.role === 'admin' && (
               <IconButton
                 size="small"
-                onClick={() => handleOpenDialog(params.row)}
-                title="Edit"
+                onClick={() => handleDelete(params.row._id)}
+                title="Delete"
+                color="error"
               >
-                <Edit />
+                <Delete />
               </IconButton>
-              <IconButton
-                size="small"
-                onClick={() => handleToggleStatus(params.row._id)}
-                title={params.row.isActive ? 'Deactivate' : 'Activate'}
-                color={params.row.isActive ? 'warning' : 'success'}
-              >
-                {params.row.isActive ? <Block /> : <CheckCircle />}
-              </IconButton>
-            </>
-          )}
-          {currentUser?.role === 'admin' && (
-            <IconButton
-              size="small"
-              onClick={() => handleDelete(params.row._id)}
-              title="Delete"
-              color="error"
-            >
-              <Delete />
-            </IconButton>
-          )}
-        </Box>
-      ),
+            )}
+          </Box>
+        );
+      },
     },
   ];
 
@@ -319,7 +328,8 @@ export default function Users() {
               >
                 <MenuItem value="employee">Employee</MenuItem>
                 <MenuItem value="manager">Manager</MenuItem>
-                <MenuItem value="admin">Admin</MenuItem>
+                {/* Only an admin can grant the admin role */}
+                {currentUser?.role === 'admin' && <MenuItem value="admin">Admin</MenuItem>}
               </TextField>
             </Grid>
             <Grid item xs={12} md={6}>
