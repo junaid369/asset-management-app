@@ -17,6 +17,11 @@ import {
   Tab,
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { TimePicker } from '@mui/x-date-pickers/TimePicker';
+import dayjs from 'dayjs';
 import {
   Add,
   Edit,
@@ -446,6 +451,12 @@ export default function Attendance() {
 
   const columns = [
     {
+      field: 'date',
+      headerName: 'Date',
+      width: 140,
+      renderCell: (params) => formatDate(params.value),
+    },
+    {
       field: 'employee',
       headerName: 'Employee',
       width: 200,
@@ -537,6 +548,7 @@ export default function Attendance() {
   ];
 
   return (
+    <LocalizationProvider dateAdapter={AdapterDayjs}>
     <Box sx={{ maxWidth: '1600px', mx: 'auto' }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
         <Typography variant="h4" sx={{ fontWeight: 700, color: t.heading, letterSpacing: '0.5px' }}>
@@ -593,14 +605,15 @@ export default function Attendance() {
       {tab === 0 && (
         <>
           <Box sx={{ mb: 2, maxWidth: 240 }}>
-            <TextField
-              fullWidth
-              type="date"
+            <DatePicker
               label="Filter by date"
-              InputLabelProps={{ shrink: true }}
-              value={filterDate}
-              onChange={(e) => setFilterDate(e.target.value)}
-              sx={formFieldStyles}
+              format="DD/MM/YYYY"
+              value={filterDate ? dayjs(filterDate) : null}
+              onChange={(v) => setFilterDate(v && v.isValid() ? v.format('YYYY-MM-DD') : '')}
+              slotProps={{
+                textField: { fullWidth: true, sx: formFieldStyles },
+                field: { clearable: true },
+              }}
             />
           </Box>
 
@@ -694,14 +707,17 @@ export default function Attendance() {
               </TextField>
             </Grid>
             <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                type="date"
+              <DatePicker
                 label="Date"
-                InputLabelProps={{ shrink: true }}
-                value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                sx={formFieldStyles}
+                format="DD/MM/YYYY"
+                value={formData.date ? dayjs(formData.date) : null}
+                onChange={(v) =>
+                  setFormData({ ...formData, date: v && v.isValid() ? v.format('YYYY-MM-DD') : '' })
+                }
+                slotProps={{
+                  textField: { fullWidth: true, sx: formFieldStyles },
+                  field: { clearable: true },
+                }}
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -721,25 +737,29 @@ export default function Attendance() {
               </TextField>
             </Grid>
             <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                type="time"
+              <TimePicker
                 label="Check In"
-                InputLabelProps={{ shrink: true }}
-                value={formData.checkIn}
-                onChange={(e) => setFormData({ ...formData, checkIn: e.target.value })}
-                sx={formFieldStyles}
+                value={formData.checkIn ? dayjs(`2000-01-01T${formData.checkIn}`) : null}
+                onChange={(v) =>
+                  setFormData({ ...formData, checkIn: v && v.isValid() ? v.format('HH:mm') : '' })
+                }
+                slotProps={{
+                  textField: { fullWidth: true, sx: formFieldStyles },
+                  field: { clearable: true },
+                }}
               />
             </Grid>
             <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                type="time"
+              <TimePicker
                 label="Check Out"
-                InputLabelProps={{ shrink: true }}
-                value={formData.checkOut}
-                onChange={(e) => setFormData({ ...formData, checkOut: e.target.value })}
-                sx={formFieldStyles}
+                value={formData.checkOut ? dayjs(`2000-01-01T${formData.checkOut}`) : null}
+                onChange={(v) =>
+                  setFormData({ ...formData, checkOut: v && v.isValid() ? v.format('HH:mm') : '' })
+                }
+                slotProps={{
+                  textField: { fullWidth: true, sx: formFieldStyles },
+                  field: { clearable: true },
+                }}
               />
             </Grid>
             <Grid item xs={12}>
@@ -785,6 +805,7 @@ export default function Attendance() {
         </DialogActions>
       </Dialog>
     </Box>
+    </LocalizationProvider>
   );
 }
 
@@ -871,14 +892,15 @@ function ReportTab({
             </Grid>
           )}
           <Grid item xs={12} md={isManager ? 4 : 8}>
-            <TextField
-              fullWidth
-              type="month"
+            <DatePicker
               label="Month"
-              InputLabelProps={{ shrink: true }}
-              value={reportMonth}
-              onChange={(e) => setReportMonth(e.target.value)}
-              sx={formFieldStyles}
+              views={['year', 'month']}
+              format="MMMM YYYY"
+              value={reportMonth ? dayjs(`${reportMonth}-01`) : null}
+              onChange={(v) =>
+                setReportMonth(v && v.isValid() ? v.format('YYYY-MM') : '')
+              }
+              slotProps={{ textField: { fullWidth: true, sx: formFieldStyles } }}
             />
           </Grid>
           <Grid item xs={12} md={isManager ? 3 : 4}>
